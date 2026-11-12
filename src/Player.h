@@ -1,4 +1,9 @@
 #pragma once
+#include <SFML/Network.hpp>
+#include <thread>
+#include <vector>
+#include <iostream>
+#include <mutex>
 #include <memory>
 #include "Piece.h"
 
@@ -17,3 +22,4 @@ class Player
 		int player_id;
 		std::vector<std::shared_ptr<Piece>> pieces;
 };
+

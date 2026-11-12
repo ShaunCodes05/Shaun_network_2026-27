@@ -17,7 +17,7 @@ FetchContent_MakeAvailable(SFML)    # Makes sure SFML and its dependencies are a
 #---- File management & .exe creation ----#
 
 # Set variable SOURCE_FILES to hold names & locations of files that need to be compiled into the application
-set(SOURCE_FILES src/main.cpp src/Game.cpp src/Game.h "src/Tile.h" "src/Tile.cpp" "src/Piece.h" "src/Piece.cpp" "src/Player.h" "src/Player.cpp" "src/Board.h" "src/Board.cpp")  
+set(SOURCE_FILES src/main.cpp src/Game.cpp src/Game.h "src/Tile.h" "src/Tile.cpp" "src/Piece.h" "src/Piece.cpp" "src/Player.h" "src/Player.cpp" "src/Board.h" "src/Board.cpp" "src/Server.h" "src/Server.cpp" "src/Client.h" "src/Client.cpp" )  
 
 # Name the application and tells compiler which source files to use (using SOURCE_FILES variable created above)
 add_executable(NETWORK_fox_n_hounds ${SOURCE_FILES})  
@@ -28,7 +28,9 @@ target_compile_features(NETWORK_fox_n_hounds PRIVATE cxx_std_20)  # Defines whic
 # Copies anything that's changed in the source data directory over the build's data diroctory, so the executable can access it.
 # Happens after code is built, rather than only when this file is run.
 add_custom_command(TARGET NETWORK_fox_n_hounds POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different "${CMAKE_CURRENT_SOURCE_DIR}/Data/" "${CMAKE_CURRENT_BINARY_DIR}/Data/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/Data"
+    "$<TARGET_FILE_DIR:NETWORK_fox_n_hounds>/Data"
 )
 
 #Optional command, deletes the data directory in the build folder and copies data from source directory to build.Could make building slower but removes files from the build directory that aren't in the source directory'
