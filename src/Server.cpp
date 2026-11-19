@@ -1,4 +1,6 @@
+
 #include "Server.h"
+#include <chrono>
 
 Server::Server()
 {
@@ -8,43 +10,106 @@ Server::Server()
 
 void Server::init()
 {
+    start(53000);
+}
+
+bool Server::start(unsigned short port)
+{
+    if (running)
+    {
+        std::cout << "Server is already running!" << std::endl;
+        return false;
+    }
+
     if (listener == nullptr)
     {
         listener = std::make_unique<sf::TcpListener>();
     }
 
-    if (listener->listen(5300) != sf::Socket::Status::Done)
+    if (listener->listen(port) != sf::Socket::Status::Done)
     {
-        std::cout << "Couldn't bind listener port" << std::endl;
+        std::cout << "Couldn't bind listener port: "
+            << port << std::endl;
+        return false;
     }
-}
 
-bool Server::start(unsigned short port)
-{
-    return listener->listen(port) == sf::Socket::Status::Done;
+    listener->setBlocking(false);
+
+    running = true;
+
+    std::cout << "Server started on port: "
+        << port << std::endl;
+
+    return true;
 }
 
 bool Server::acceptClient()
 {
-    return listener->accept(*clientSocket) == sf::Socket::Status::Done;
+    if (!running)
+    {
+        return false;
+    }
+
+    return listener->accept(*clientSocket)
+        == sf::Socket::Status::Done;
 }
 
 void Server::run()
 {
+    if (!running)
+    {
+        std::cout << "Server is not running!" << std::endl;
+        return;
+    }
+
+    std::cout << "Waiting for clients..." << std::endl;
+
     while (running)
     {
-        sf::TcpSocket& c_sock =
-            *connections.emplace_back(std::make_unique<sf::TcpSocket>());
+        auto newSocket = std::make_unique<sf::TcpSocket>();
 
-        if (listener->accept(c_sock) != sf::Socket::Status::Done)
+        sf::Socket::Status status = listener->accept(*newSocket);
+
+        if (status == sf::Socket::Status::Done)
         {
-            connections.pop_back();
+            auto address = newSocket->getRemoteAddress();
 
-            std::cout << "Connection failed on server side" << std::endl;
-            continue;
+            std::cout << "Client connected: ";
+
+            if (address)
+            {
+                std::cout << address->toString();
+            }
+
+            std::cout << ":"
+                << newSocket->getRemotePort()
+                << std::endl;
+
+            newSocket->setBlocking(false);
+
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+
+                connections.push_back(std::move(newSocket));
+            }
+        }
+        else if (status != sf::Socket::Status::NotReady)
+        {
+            std::cout << "Connection failed on server side"
+                << std::endl;
         }
 
-        std::cout << "Client connected @ "
-            << c_sock.getRemotePort() << std::endl;
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(1)
+        );
     }
+
+    std::cout << "Server stopped." << std::endl;
+}
+
+void Server::stop()
+{
+    running = false;
+
+    std::cout << "Stopping server..." << std::endl;
 }

@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <SFML/Network.hpp>
@@ -12,14 +13,18 @@ class Client
 public:
     Client();
 
+    // Connection
     void connect();
+
+    bool connect(const std::string& ip, unsigned short port);
+
+    // Client functionality
     void input();
     void run();
 
-    std::atomic<bool> _running = false;
-    std::atomic<bool> connected = false;
-
-    bool connect(const std::string& ip, unsigned short port);
+    // Client state
+    std::atomic<bool> _running{ false };
+    std::atomic<bool> connected{ false };
 
 private:
     std::unique_ptr<sf::TcpSocket> socket;

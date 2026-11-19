@@ -2,6 +2,7 @@
 #include "Game.h"
 #include "Tile.h"
 #include <iostream>
+#include <thread>
 
 Game::Game(sf::RenderWindow& game_window)
     : window(game_window),
@@ -12,7 +13,15 @@ Game::Game(sf::RenderWindow& game_window)
 
 Game::~Game()
 {
-    
+    if (server)
+    {
+        server->stop();
+    }
+
+    if (serverThread.joinable())
+    {
+        serverThread.join();
+    }
 }
 
 bool Game::init()
@@ -84,34 +93,51 @@ void Game::mouseButtonPressed(
             static_cast<float>(event->position.y)
         );
 
+        // HOST GAME
         if (host_button->getGlobalBounds().contains(mousePosition))
         {
-            game_state = GAME;
-
-            std::cout << "Creating server." << std::endl;
+            std::cout << "Creating server..." << std::endl;
 
             server = std::make_unique<Server>();
 
-            if (!server->start(53000))
+            if (server->start(53000))
+            {
+                // Start accepting clients on a separate thread.
+                serverThread = std::thread(
+                    &Server::run,
+                    server.get()
+                );
+
+                std::cout << "Hosting successfully!" << std::endl;
+
+                game_state = GAME;
+            }
+            else
             {
                 std::cout << "Server failed to start." << std::endl;
                 server.reset();
-                game_state = MENU;
             }
         }
+
+        // JOIN GAME
         else if (join_button->getGlobalBounds().contains(mousePosition))
         {
-            game_state = GAME;
-
-            std::cout << "Attempting to connect to server." << std::endl;
+            std::cout << "Attempting to connect to server..."
+                << std::endl;
 
             client = std::make_unique<Client>();
 
-            if (!client->connect("127.0.0.1", 53000))
+            if (client->connect("127.0.0.1", 53000))
+            {
+                std::cout << "Successfully joined server!"
+                    << std::endl;
+
+                game_state = GAME;
+            }
+            else
             {
                 std::cout << "Connection failed." << std::endl;
                 client.reset();
-                game_state = MENU;
             }
         }
     }
@@ -121,9 +147,10 @@ void Game::mouseButtonPressed(
     }
 }
 
-void Game::mouseButtonReleased(const sf::Event::MouseButtonReleased* event)
+void Game::mouseButtonReleased(
+    const sf::Event::MouseButtonReleased* event)
 {
-    board->mouseButtonReleased(event);    
+    board->mouseButtonReleased(event);
 }
 
 void Game::keyPressed(const sf::Event::KeyPressed* event)
@@ -140,7 +167,3 @@ void Game::mouseMoved(const sf::Event::MouseMoved* event)
 {
     board->mouseMoved(event);
 }
-
-
-
-
