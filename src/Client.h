@@ -23,7 +23,7 @@ public:
     void run();
 
     // Client state
-    std::atomic<bool> _running{ false };
+    std::atomic<bool> running{ false };
     std::atomic<bool> connected{ false };
 
 private:

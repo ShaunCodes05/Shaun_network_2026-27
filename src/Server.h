@@ -14,25 +14,38 @@ class Server
 {
 public:
     Server();
+    ~Server();
 
     void init();
     void run();
     void stop();
-
-    void listen(sf::TcpSocket& c_socket);
-    void send(std::string buffer, sf::TcpSocket& c_socket);
     void input();
 
+    void listen(std::shared_ptr<sf::TcpSocket> socket);
+
+    void relay(
+        const std::string& message,
+        sf::TcpSocket& sender_socket
+    );
+
     bool start(unsigned short port);
-    bool acceptClient();
 
 private:
+    bool sendAll(
+        sf::TcpSocket& socket,
+        const char* data,
+        std::size_t size
+    );
+
+    void removeClient(
+        const std::shared_ptr<sf::TcpSocket>& socket
+    );
+
     std::vector<std::thread> workers;
 
-    std::vector<std::unique_ptr<sf::TcpSocket>> connections;
+    std::vector<std::shared_ptr<sf::TcpSocket>> connections;
 
     std::unique_ptr<sf::TcpListener> listener;
-    std::unique_ptr<sf::TcpSocket> clientSocket;
 
     std::atomic<bool> running{ false };
 
